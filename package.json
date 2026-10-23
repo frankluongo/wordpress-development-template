@@ -5,7 +5,7 @@
 	"description": "Local WordPress development template: Docker, HTTPS, hot reloading, client database import, and release zips.",
 	"type": "module",
 	"engines": {
-		"node": ">=24.15.0"
+		"node": ">=24.22.1"
 	},
 	"workspaces": [
 		"wp-content/themes/*",
