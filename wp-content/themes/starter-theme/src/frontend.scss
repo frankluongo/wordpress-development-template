@@ -1,0 +1,18 @@
+// Front-end (and editor canvas) styles. Most styling belongs in theme.json;
+// use this file for what theme.json can't express.
+
+:root {
+	--starter-theme--focus-ring: 2px solid var(--wp--preset--color--accent);
+}
+
+a:focus-visible,
+button:focus-visible {
+	outline: var(--starter-theme--focus-ring);
+	outline-offset: 2px;
+}
+
+.wp-block-group.is-style-card {
+	padding: 1.5rem;
+	border-radius: 8px;
+	background: var(--wp--preset--color--muted);
+}

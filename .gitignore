@@ -1,0 +1,41 @@
+# Local configuration and secrets
+.env
+
+# Database dumps, imports, backups, exports
+.db/
+
+# Premium plugin zips (never committed)
+premium-plugins/*
+!premium-plugins/README.md
+
+# Release output
+dist/
+.release/
+
+# Dependencies and build output
+node_modules/
+vendor/
+build/
+*.hot
+
+# Certificates
+certs/
+*.pem
+
+# WordPress core, third-party plugins/themes, and uploads live in Docker volumes.
+# These guard against anything being copied into the repo by accident.
+/wp-admin/
+/wp-includes/
+wp-content/uploads/
+wp-content/upgrade/
+wp-content/debug.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/launch.json
+*.log
+
+# Generated nginx fragments (npm run up)
+docker/nginx/includes/*.conf

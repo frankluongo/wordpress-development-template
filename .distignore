@@ -1,0 +1,33 @@
+# Release zip exclusions (R8.6). Gitignore syntax, relative to the theme or plugin folder.
+# A .distignore inside a theme or plugin folder is applied on top of this one.
+
+# Sources (built output in build/ is kept). Other files in src/ and assets/, such as
+# PHP classes, fonts and images, are kept.
+/src/**/*.js
+/src/**/*.jsx
+/src/**/*.ts
+/src/**/*.tsx
+/src/**/*.scss
+/src/**/*.css
+/assets/**/*.js
+/assets/**/*.jsx
+/assets/**/*.ts
+/assets/**/*.tsx
+/assets/**/*.scss
+/assets/**/*.css
+# Block sources; block.json, render.php and assets are copied into build/blocks/.
+/blocks/
+node_modules/
+tests/
+
+# Dotfiles and tooling config
+.*
+*.map
+package.json
+package-lock.json
+composer.lock
+phpcs.xml*
+phpunit.xml*
+webpack.config.js
+CHANGELOG.md
+build/.hot

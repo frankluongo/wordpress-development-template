@@ -1,0 +1,58 @@
+{
+	"name": "wordpress-development-template",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Local WordPress development template: Docker, HTTPS, hot reloading, client database import, and release zips.",
+	"type": "module",
+	"engines": {
+		"node": ">=24.15.0"
+	},
+	"workspaces": [
+		"wp-content/themes/*",
+		"wp-content/plugins/*"
+	],
+	"scripts": {
+		"setup": "node scripts/setup.mjs",
+		"proxy:up": "node scripts/proxy.mjs up",
+		"proxy:down": "node scripts/proxy.mjs down",
+		"proxy:status": "node scripts/proxy.mjs status",
+		"domains:add": "node scripts/domains.mjs add",
+		"domains:remove": "node scripts/domains.mjs remove",
+		"up": "node scripts/up.mjs",
+		"down": "docker compose --profile tools down",
+		"reset": "node scripts/reset.mjs",
+		"dev": "node scripts/dev.mjs",
+		"build": "node scripts/build.mjs",
+		"wp": "docker compose exec -u www-data php wp",
+		"shell": "docker compose exec php bash",
+		"logs": "docker compose logs -f --tail=50",
+		"db:import": "node scripts/db-import.mjs",
+		"db:export": "node scripts/db-export.mjs",
+		"db:restore": "node scripts/db-restore.mjs",
+		"db:pull": "node scripts/db-pull.mjs",
+		"uploads:pull": "node scripts/uploads-pull.mjs",
+		"plugins:install": "node scripts/plugins-install.mjs",
+		"plugins:check": "node scripts/plugins-check.mjs",
+		"release": "node scripts/release.mjs",
+		"zip": "node scripts/zip.mjs",
+		"lint": "node scripts/lint.mjs",
+		"lint:php": "node scripts/lint.mjs --php",
+		"lint:js": "wp-scripts lint-js",
+		"lint:css": "wp-scripts lint-style \"wp-content/{themes,plugins}/*/{src,assets,blocks}/**/*.{css,scss}\"",
+		"lint:fix": "node scripts/lint.mjs --fix",
+		"format": "wp-scripts format",
+		"check-versions": "node scripts/check-versions.mjs",
+		"test": "node --test \"tests/scripts/*.test.mjs\"",
+		"test:integration": "WP_DEV_INTEGRATION=1 node --test \"tests/integration/*.test.mjs\""
+	},
+	"devDependencies": {
+		"@inquirer/prompts": "^8.7.4",
+		"@wordpress/prettier-config": "^5.0.0",
+		"@wordpress/scripts": "^37.0.0",
+		"archiver": "^8.0.0",
+		"ignore": "^7.0.13",
+		"prettier": "npm:wp-prettier@^3.9.6",
+		"semver": "^7.8.5",
+		"yauzl": "^3.4.0"
+	}
+}

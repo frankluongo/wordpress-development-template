@@ -1,0 +1,10 @@
+# Missing media redirects to production, so client uploads don't need downloading (R5.8).
+# Rendered to includes/uploads-proxy.conf by `npm run up` when UPLOADS_PROXY_URL is set.
+location ~ ^/wp-content/uploads/ {
+	access_log off;
+	try_files $uri @production_uploads;
+}
+
+location @production_uploads {
+	return 302 ${UPLOADS_PROXY_URL}$request_uri;
+}

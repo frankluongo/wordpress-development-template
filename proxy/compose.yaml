@@ -1,0 +1,25 @@
+# Shared HTTPS reverse proxy for every project on this machine.
+# Installed to ~/.config/wp-dev-proxy by `npm run proxy:up`; don't run it from the project folder.
+name: wp-dev-proxy
+
+services:
+  traefik:
+    image: traefik:v3.7.16
+    container_name: wp-dev-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - wp-dev-proxy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./certs:/certs:ro
+      - ./dynamic:/dynamic:ro
+
+networks:
+  wp-dev-proxy:
+    external: true

@@ -1,0 +1,158 @@
+# Project stack: nginx + PHP-FPM + database + Mailpit (+ optional database UI).
+# Values come from .env. Start it with `npm run up`, which also starts the shared proxy.
+name: ${COMPOSE_PROJECT_NAME:?Set COMPOSE_PROJECT_NAME in .env}
+
+services:
+  php:
+    build:
+      context: ./docker/php
+      args:
+        PHP_VERSION: ${PHP_VERSION:-8.3}
+        WP_CLI_VERSION: ${WP_CLI_VERSION:-2.12.0}
+    image: ${COMPOSE_PROJECT_NAME}-php:${PHP_VERSION:-8.3}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN}
+      SITE_TITLE: ${SITE_TITLE:-WordPress}
+      THEME_SLUG: ${THEME_SLUG:-}
+      PLUGIN_SLUG: ${PLUGIN_SLUG:-}
+      WP_VERSION: ${WP_VERSION:-latest}
+      WP_ENVIRONMENT_TYPE: local
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-wordpress}
+      DB_USER: ${DB_USER:-wordpress}
+      DB_PASSWORD: ${DB_PASSWORD:-wordpress}
+      TABLE_PREFIX: ${TABLE_PREFIX:-wp_}
+      LOCAL_ADMIN_USER: ${LOCAL_ADMIN_USER:-admin}
+      LOCAL_ADMIN_PASSWORD: ${LOCAL_ADMIN_PASSWORD:-}
+      LOCAL_ADMIN_EMAIL: ${LOCAL_ADMIN_EMAIL:-}
+      XDEBUG_MODE: ${XDEBUG_MODE:-off}
+      PHP_UPLOAD_MAX: ${PHP_UPLOAD_MAX:-256M}
+      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-512M}
+      PHP_MAX_EXECUTION_TIME: ${PHP_MAX_EXECUTION_TIME:-300}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      WP_AUTH_KEY: ${WP_AUTH_KEY:-}
+      WP_SECURE_AUTH_KEY: ${WP_SECURE_AUTH_KEY:-}
+      WP_LOGGED_IN_KEY: ${WP_LOGGED_IN_KEY:-}
+      WP_NONCE_KEY: ${WP_NONCE_KEY:-}
+      WP_AUTH_SALT: ${WP_AUTH_SALT:-}
+      WP_SECURE_AUTH_SALT: ${WP_SECURE_AUTH_SALT:-}
+      WP_LOGGED_IN_SALT: ${WP_LOGGED_IN_SALT:-}
+      WP_NONCE_SALT: ${WP_NONCE_SALT:-}
+    volumes:
+      - wordpress:/var/www/html
+      # Only project-owned code is bind-mounted (R2.6). An empty slug mounts a harmless placeholder.
+      - ./wp-content/themes/${THEME_SLUG:-../../docker/empty}:/var/www/html/wp-content/themes/${THEME_SLUG:-.wp-dev-empty}
+      - ./wp-content/plugins/${PLUGIN_SLUG:-../../docker/empty}:/var/www/html/wp-content/plugins/${PLUGIN_SLUG:-.wp-dev-empty}
+      - ./docker/wordpress/wp-config.php:/var/www/html/wp-config.php:ro
+      - ./docker/wordpress/wp-dev-local.php:/var/www/html/wp-content/mu-plugins/wp-dev-local.php:ro
+      - ./premium-plugins:/premium-plugins:ro
+      - ./.db:/db
+      - ./:/project
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/wp-dev-ready"]
+      interval: 2s
+      timeout: 2s
+      retries: 300
+      start_period: 10m
+
+  nginx:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    depends_on:
+      - php
+    environment:
+      PHP_UPLOAD_MAX: ${PHP_UPLOAD_MAX:-256M}
+      PHP_MAX_EXECUTION_TIME: ${PHP_MAX_EXECUTION_TIME:-300}
+    volumes:
+      - wordpress:/var/www/html
+      # Only project-owned code is bind-mounted (R2.6). An empty slug mounts a harmless placeholder.
+      - ./wp-content/themes/${THEME_SLUG:-../../docker/empty}:/var/www/html/wp-content/themes/${THEME_SLUG:-.wp-dev-empty}
+      - ./wp-content/plugins/${PLUGIN_SLUG:-../../docker/empty}:/var/www/html/wp-content/plugins/${PLUGIN_SLUG:-.wp-dev-empty}
+      - ./docker/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./docker/nginx/includes:/etc/nginx/includes:ro
+    networks:
+      - default
+      - wp-dev-proxy
+    labels:
+      # List form: Compose interpolates variables in values but not in mapping keys.
+      - "traefik.enable=true"
+      - "traefik.docker.network=wp-dev-proxy"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-web.rule=Host(`${SITE_DOMAIN}`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-web.entrypoints=websecure"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-web.tls=true"
+      - "traefik.http.services.${COMPOSE_PROJECT_NAME}-web.loadbalancer.server.port=80"
+
+  db:
+    image: ${DB_IMAGE:-mariadb}:${DB_VERSION:-10.11}
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-wordpress}
+      MYSQL_USER: ${DB_USER:-wordpress}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-wordpress}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    command:
+      - --max_allowed_packet=256M
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      # Works for both the mariadb and mysql images.
+      test:
+        - CMD-SHELL
+        - (command -v mariadb-admin >/dev/null && mariadb-admin ping -h 127.0.0.1 -uroot -p"$$MYSQL_ROOT_PASSWORD" --silent) || mysqladmin ping -h 127.0.0.1 -uroot -p"$$MYSQL_ROOT_PASSWORD" --silent
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 30s
+
+  mailpit:
+    image: axllent/mailpit:v1.31
+    restart: unless-stopped
+    networks:
+      - default
+      - wp-dev-proxy
+    labels:
+      # List form: Compose interpolates variables in values but not in mapping keys.
+      - "traefik.enable=true"
+      - "traefik.docker.network=wp-dev-proxy"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-mail.rule=Host(`mail.${SITE_DOMAIN}`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-mail.entrypoints=websecure"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-mail.tls=true"
+      - "traefik.http.services.${COMPOSE_PROJECT_NAME}-mail.loadbalancer.server.port=8025"
+
+  # Optional database UI: `npm run up -- --tools`, then https://db.<domain>.
+  dbadmin:
+    image: adminer:5.5.1
+    profiles: ["tools"]
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    networks:
+      - default
+      - wp-dev-proxy
+    labels:
+      # List form: Compose interpolates variables in values but not in mapping keys.
+      - "traefik.enable=true"
+      - "traefik.docker.network=wp-dev-proxy"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-db.rule=Host(`db.${SITE_DOMAIN}`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-db.entrypoints=websecure"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-db.tls=true"
+      - "traefik.http.services.${COMPOSE_PROJECT_NAME}-db.loadbalancer.server.port=8080"
+
+networks:
+  wp-dev-proxy:
+    external: true
+
+volumes:
+  wordpress:
+  db:

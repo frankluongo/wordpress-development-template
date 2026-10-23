@@ -1,0 +1,17 @@
+// Front end and editor.
+.wp-block-starter-plugin-example {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	align-items: flex-start;
+
+	&__button {
+		padding: 0.5rem 1rem;
+		border: 0;
+		border-radius: 4px;
+		background: var(--wp--preset--color--contrast, #111);
+		color: var(--wp--preset--color--base, #fff);
+		cursor: pointer;
+		font: inherit;
+	}
+}

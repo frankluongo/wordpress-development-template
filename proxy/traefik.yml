@@ -1,0 +1,33 @@
+# Static Traefik configuration for the shared local proxy.
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":443"
+    transport:
+      respondingTimeouts:
+        # Long-running requests such as large imports through wp-admin.
+        readTimeout: 600s
+        writeTimeout: 600s
+
+providers:
+  docker:
+    exposedByDefault: false
+    network: wp-dev-proxy
+  # Per-project certificates (<slug>.yml) and host-side dev server routes (<slug>-hmr.yml).
+  file:
+    directory: /dynamic
+    watch: true
+
+log:
+  level: WARN
+
+api:
+  dashboard: false

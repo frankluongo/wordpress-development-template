@@ -1,0 +1,39 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "starter-plugin/example",
+	"version": "1.0.0",
+	"title": "Example",
+	"category": "widgets",
+	"icon": "lightbulb",
+	"description": "An example interactive block from Starter Plugin.",
+	"example": {},
+	"attributes": {
+		"label": {
+			"type": "string",
+			"default": "Show message"
+		},
+		"message": {
+			"type": "string",
+			"default": "Hello from Starter Plugin!"
+		}
+	},
+	"supports": {
+		"html": false,
+		"interactivity": true,
+		"color": {
+			"background": true,
+			"text": true
+		},
+		"spacing": {
+			"padding": true,
+			"margin": true
+		}
+	},
+	"textdomain": "starter-plugin",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php",
+	"viewScriptModule": "file:./view.js"
+}
